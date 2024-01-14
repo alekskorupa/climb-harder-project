@@ -1,0 +1,6 @@
+stages:
+  prepare_data:
+    cmd: python src/bin/data/data_cleaning.py
+    deps:
+      - src/bin/data/data_cleaning.py
+      - data/raw/reddit_data.csv

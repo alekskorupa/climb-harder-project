@@ -1,0 +1,54 @@
+[tool.poetry]
+name = "climb-harder"
+version = "0.1.0"
+description = "Climbing the data science mountain"
+authors = ["aleksanderskorupa <olek.skorupa@egmail.com>"]
+
+[tool.black]
+experimental-string-processing = true
+line-length = 120
+
+[tool.poetry.dependencies]
+python = "^3.8"
+src = {path = "src", develop = true}
+dvc-gdrive = "^3.0.1"
+
+[tool.poetry.group.dev.dependencies]
+pyodbc = "^5.0.1"
+black = "*"
+blacken-docs =  "*"
+dvc = "*"
+flake8 = "*"
+hydra-colorlog = "*"
+hydra-core = "*"
+ipykernel = "*"
+ipython = "*"
+ipywidgets = "*"
+isort =  "*"
+jupyter-contrib-nbextensions = "*"
+jupyterlab = "*"
+jupyterlab-git = "*"
+jupyterlab-server = "*"
+jupytext = "*"
+line-profiler = "*"
+matplotlib = "*"
+mlflow = "*"
+mlxtend = "*"
+mypy = "*"
+notebook = "*"
+nptyping = "*"
+omegaconf = "*"
+pandas = "*"
+plotly = "*"
+pre-commit = "*"
+pydocstyle = "*"
+pylint =  "*"
+pytest = "*"
+scikit-learn = "*"
+scipy = "*"
+seaborn = "*"
+setuptools = "*"
+statsmodels = "*"
+tqdm = "*"
+types-PyYAML = "*"
+wget = "*"

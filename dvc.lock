@@ -1,0 +1,13 @@
+schema: '2.0'
+stages:
+  prepare_data:
+    cmd: python src/bin/data/data_cleaning.py
+    deps:
+    - path: data/raw/reddit_data.csv
+      hash: md5
+      md5: 20779403f928292be86161d924839ebd
+      size: 174309
+    - path: src/bin/data/data_cleaning.py
+      hash: md5
+      md5: 558ab008989288387b9f7b35d46bf06c
+      size: 16679
