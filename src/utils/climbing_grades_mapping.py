@@ -110,3 +110,7 @@ french_sport_to_v_grade_mapping = {
     "9b": "V16",
     "9b+": "V17",
 }
+
+numeric_to_v_mapping = {v: k for k, v in v_to_numeric_mapping.items()}
+v_grade_to_french_sport_mapping = {v: k for k, v in french_sport_to_v_grade_mapping.items()}
+fb_to_v_mapping = {v: k for k, v in v_to_fb_mapping.items()}
