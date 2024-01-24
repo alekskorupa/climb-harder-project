@@ -1,13 +1,98 @@
 schema: '2.0'
 stages:
   prepare_data:
-    cmd: python src/bin/data/data_cleaning.py
+    cmd: python src/bin/data/clean_data.py
     deps:
     - path: data/raw/reddit_data.csv
       hash: md5
       md5: 20779403f928292be86161d924839ebd
       size: 174309
-    - path: src/bin/data/data_cleaning.py
+    - path: src/bin/data/clean_data.py
       hash: md5
-      md5: 558ab008989288387b9f7b35d46bf06c
-      size: 16679
+      md5: bc21a454e1c9ced256f857869bf036d7
+      size: 15314
+    outs:
+    - path: data/interim/reddit_data.csv
+      hash: md5
+      md5: d3c301495b01299ac9fb3bf989cf0a85
+      size: 389352
+  clean_data:
+    cmd: python src/bin/data/clean_data.py
+    deps:
+    - path: data/raw/reddit_data.csv
+      hash: md5
+      md5: 20779403f928292be86161d924839ebd
+      size: 174309
+    - path: src/bin/data/clean_data.py
+      hash: md5
+      md5: 66b66119c2882ee7595baa66c5c60a60
+      size: 15393
+    outs:
+    - path: data/interim/reddit_data.csv
+      hash: md5
+      md5: 056eb2a4d6756ed9c9617dad7252d005
+      size: 390608
+  make_datasets:
+    cmd: python src/bin/data/make_datasets.py
+    deps:
+    - path: data/interim/reddit_data.csv
+      hash: md5
+      md5: 056eb2a4d6756ed9c9617dad7252d005
+      size: 390608
+    - path: src/bin/data/make_datasets.py
+      hash: md5
+      md5: ae7e6d375d32a242dc01c7da2f0d229c
+      size: 4495
+    outs:
+    - path: data/processed/reddit_performance/X_test.csv
+      hash: md5
+      md5: f177a86db70155932930fe1c045a0dbd
+      size: 4605
+    - path: data/processed/reddit_performance/X_train.csv
+      hash: md5
+      md5: 1bc379d3fce617e6e53c74a57f353821
+      size: 38667
+    - path: data/processed/reddit_training_style/X_test.csv
+      hash: md5
+      md5: f4a0f9c97c119044109ea243310c8479
+      size: 18121
+    - path: data/processed/reddit_training_style/X_train.csv
+      hash: md5
+      md5: e94cb2d84be06581c8726b8af884c70b
+      size: 154353
+    - path: data/processed/y_test.csv
+      hash: md5
+      md5: 2bd94c0a162aa0452aea1fed65d09aaa
+      size: 1966
+    - path: data/processed/y_train.csv
+      hash: md5
+      md5: 97a21919d74279d9113d0e3cdfa83496
+      size: 16529
+  train_performance_model:
+    cmd: python src/bin/models/train_performance_model.py
+    deps:
+    - path: data/processed/reddit_performance/X_test.csv
+      hash: md5
+      md5: f177a86db70155932930fe1c045a0dbd
+      size: 4605
+    - path: data/processed/reddit_performance/X_train.csv
+      hash: md5
+      md5: 1bc379d3fce617e6e53c74a57f353821
+      size: 38667
+    - path: data/processed/y_test.csv
+      hash: md5
+      md5: 2bd94c0a162aa0452aea1fed65d09aaa
+      size: 1966
+    - path: data/processed/y_train.csv
+      hash: md5
+      md5: 97a21919d74279d9113d0e3cdfa83496
+      size: 16529
+    - path: src/bin/models/train_performance_model.py
+      hash: md5
+      md5: 8e752768f19cfcc0c5c949e12d5262be
+      size: 3938
+    outs:
+    - path: data/models/performance_model/model.pkl
+      hash: md5
+      md5: 161b1c5e24bb2d2ab47f41630d45463e
+      size: 73830
