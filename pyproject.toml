@@ -3,21 +3,28 @@ name = "climb-harder"
 version = "0.1.0"
 description = "Climbing the data science mountain"
 authors = ["aleksanderskorupa <olek.skorupa@egmail.com>"]
+packages = [
+    { include = "src"}
+]
 
 [tool.black]
 experimental-string-processing = true
 line-length = 120
 
 [tool.poetry.dependencies]
-python = "^3.8"
-src = {path = "src", develop = true}
-dvc-gdrive = "^3.0.1"
+python = ">=3.8,<3.9.7 || >3.9.7,<4.0"
+xgboost = "^2.0.3"
+shap = "^0.44.0"
+
+[tool.poetry.group.app.dependencies]
+streamlit = "^1.30.0"
+
 
 [tool.poetry.group.dev.dependencies]
-pyodbc = "^5.0.1"
 black = "*"
 blacken-docs =  "*"
 dvc = "*"
+dvc-gdrive = "^3.0.1"
 flake8 = "*"
 hydra-colorlog = "*"
 hydra-core = "*"
@@ -43,7 +50,8 @@ plotly = "*"
 pre-commit = "*"
 pydocstyle = "*"
 pylint =  "*"
-pytest = "*"
+pyodbc = "^5.0.1"
+pytest = "^7.4.4"
 scikit-learn = "*"
 scipy = "*"
 seaborn = "*"
@@ -52,3 +60,7 @@ statsmodels = "*"
 tqdm = "*"
 types-PyYAML = "*"
 wget = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
