@@ -13,12 +13,12 @@ line-length = 120
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.9.7 || >3.9.7,<4.0"
-xgboost = "^2.0.3"
-shap = "^0.44.0"
+scikit-learn = "*"
+psycopg2-binary = "^2.9.9"
 
 [tool.poetry.group.app.dependencies]
 streamlit = "^1.30.0"
-
+plotly = "*"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
@@ -46,13 +46,11 @@ notebook = "*"
 nptyping = "*"
 omegaconf = "*"
 pandas = "*"
-plotly = "*"
 pre-commit = "*"
 pydocstyle = "*"
 pylint =  "*"
 pyodbc = "^5.0.1"
 pytest = "^7.4.4"
-scikit-learn = "*"
 scipy = "*"
 seaborn = "*"
 setuptools = "*"

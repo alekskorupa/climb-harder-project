@@ -44,3 +44,6 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# Secrets   
+.streamlit/secrets.toml

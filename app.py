@@ -1,6 +1,5 @@
 import streamlit as st
 import joblib
-import numpy as np
 from pathlib import Path
 from src.utils.climbing_grades_mapping import (
     v_to_fb_mapping,
@@ -8,22 +7,68 @@ from src.utils.climbing_grades_mapping import (
     v_grade_to_french_sport_mapping,
     fb_to_v_mapping,
     v_to_numeric_mapping,
+    french_sport_to_v_grade_mapping,
 )
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import numpy as np
+import psycopg2
+from psycopg2 import OperationalError
+import logging
 
-model_path = Path(__file__).parent / "data/models/performance_model"
+
+# Database connection
+def connect_to_postgres():
+    secrets = st.secrets["postgres"]
+    try:
+        connection = psycopg2.connect(
+            user=secrets["user"],
+            password=secrets["password"],
+            host=secrets["host"],
+            port=secrets["port"],
+            database=secrets["database"],
+        )
+        cursor = connection.cursor()
+        logging.info(connection.get_dsn_parameters(), "\n")
+        cursor.execute("SELECT version();")
+        record = cursor.fetchone()
+        logging.info("You are connected to - ", record, "\n")
+
+        return connection
+
+    except (Exception, OperationalError) as error:
+        logging.info("Error while connecting to PostgreSQL", error)
+
+
+def store_in_db(data: dict):
+    """Store feedback data in PostgreSQL database"""
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT INTO climbharderapp (timestamp, age, height_cm, weight_kg, arm_span_cm, climbing_exp_years,"
+        " hangboard_freq_weekly, hangboard_max_weight_half_crimp_kg, hangboard_max_weight_open_crimp_kg,"
+        " hangboard_min_edge_half_crimp_mm, hangboard_min_edge_open_crimp_mm, max_weight_pull_ups_kg,"
+        f" actual_bouldering_grade, actual_sport_grade) VALUES ('{data['timestamp']}', {data['age']},"
+        f" {data['height_cm']}, {data['weight_kg']}, {data['arm_span_cm']}, {data['climbing_exp_years']},"
+        f" {data['hangboard_freq_weekly']}, {data['hangboard_max_weight_half_crimp_kg']},"
+        f" {data['hangboard_max_weight_open_crimp_kg']}, {data['hangboard_min_edge_half_crimp_mm']},"
+        f" {data['hangboard_min_edge_open_crimp_mm']}, {data['max_weight_pull_ups_kg']},"
+        f" '{data['actual_bouldering_grade']}', '{data['actual_sport_grade']}');"
+    )
+    conn.commit()
+
 
 # Constants
-MODEL_PATH = Path(__file__).parent / "data/models/performance_model"
-REDDIT_DATA_PATH = "data/interim/reddit_data.csv"
+DATA_PATH = Path(__file__).parents[0] / "data"
+MODEL_PATH = DATA_PATH / "models/performance_model"
+REDDIT_DATA_PATH = DATA_PATH / "interim/reddit_data.csv"
 
 # Load data and model
 model = joblib.load(MODEL_PATH / "model.pkl")
 reddit_data = pd.read_csv(REDDIT_DATA_PATH)
 
+# Connect to database
+conn = connect_to_postgres()
 
 value_presets = {
     "age": {"display_name": "Age", "min": 10, "max": 100, "default": 30},
@@ -66,26 +111,20 @@ st.set_page_config(layout="wide")
 
 st.title("Climber performance estimator", anchor="center")
 
-col1, col2, col3 = st.columns([1, 1, 2])
+# Create a sidebar for user input
+st.sidebar.header("Enter your climbing stats")
 
-col1.subheader("About you")
-
+st.sidebar.subheader("About you")
 inputs = {}
 for name in ["age", "height_cm", "weight_kg", "arm_span_cm", "climbing_exp_years"]:
-    inputs[name] = col1.number_input(
+    inputs[name] = st.sidebar.number_input(
         value_presets[name]["display_name"],
         min_value=value_presets[name]["min"],
         value=value_presets[name]["default"],
     )
-inputs["gender"] = col1.selectbox("Gender", ("male", "female"))
+inputs["gender"] = st.sidebar.selectbox("Gender", ("male", "female"))
 
-col2.subheader("Grade estimation")
-col2.write(
-    "This app predicts climbing grades based on your physical attributes and training habits. Estimations are based on"
-    " a linear regression model trained on data from data collected on Reddit. It estimates climbing grades based on"
-    " your physical attributes and training habits. The model is trained on bouldering grades, but it can be used to"
-    " estimate sport grades as well."
-)
+st.sidebar.subheader("Strenght training parameters")
 for name in [
     "hangboard_freq_weekly",
     "hangboard_max_weight_half_crimp_kg",
@@ -94,7 +133,7 @@ for name in [
     "hangboard_min_edge_open_crimp_mm",
     "max_weight_pull_ups_kg",
 ]:
-    inputs[name] = col2.slider(
+    inputs[name] = st.sidebar.slider(
         value_presets[name]["display_name"],
         min_value=value_presets[name]["min"],
         max_value=value_presets[name]["max"],
@@ -107,51 +146,69 @@ inputs["ape_index"] = inputs["arm_span_cm"] / inputs["height_cm"]
 inputs["ape_diff"] = inputs["arm_span_cm"] - inputs["height_cm"]
 inputs["is_male"] = True if inputs["gender"] == "male" else False
 
+st.subheader("Grade estimation")
+st.write(
+    "This app predicts climbing grades based on your physical attributes and training habits. Estimations are based on"
+    " a linear regression model trained on data from data collected on Reddit. It estimates climbing grades based on"
+    " your physical attributes and training habits. The model is trained on bouldering grades, but it can be used to"
+    " estimate sport grades as well."
+)
 
 # When 'Predict' is clicked, make a prediction and display it
-if col2.button("Estimate"):
+if st.button("Estimate"):
+    logging.info("Estimating climbing grades")
     data = pd.Series(data=inputs).drop(["gender", "ape_diff", "age"]).to_frame().transpose()
 
     prediction = int(model.predict(data))
     prediction_v = numeric_to_v_mapping[prediction]
     prediction_fb = v_to_fb_mapping[prediction_v]
     prediction_french_sport = v_grade_to_french_sport_mapping[prediction_v]
-    col2.write("Your estimated climbing grades are: ")
-    col2.write(f"Bouldering: {prediction_v} / ({prediction_fb})")
-    col2.write(f"Sport: {prediction_french_sport}")
+    st.write("Your estimated climbing grades are: ")
+    st.write(f"Bouldering: {prediction_v} / ({prediction_fb})")
+    st.write(f"Sport: {prediction_french_sport}")
 
-col3.subheader("Compare yourself to other climbers")
-col3.write(
+    logging.info(f"Climbing grades estimated: {prediction_v} / ({prediction_fb} / {prediction_french_sport} (sport) ")
+
+actual_bouldering_grade = st.selectbox(
+    "Actual bouldering grade",
+    (grade for grade in v_to_fb_mapping.values()),
+)
+actual_sport_grade = st.selectbox("Actual sport grade", (grade for grade in french_sport_to_v_grade_mapping.keys()))
+
+# Send feedback to PostgreSQL database
+if st.button("Submit Feedback"):
+    timestamp = pd.Timestamp.now()
+    feedback_data = {
+        "timestamp": str(timestamp),
+        "age": inputs["age"],
+        "height_cm": inputs["height_cm"],
+        "weight_kg": inputs["weight_kg"],
+        "arm_span_cm": inputs["arm_span_cm"],
+        "climbing_exp_years": inputs["climbing_exp_years"],
+        "hangboard_freq_weekly": inputs["hangboard_freq_weekly"],
+        "hangboard_max_weight_half_crimp_kg": inputs["hangboard_max_weight_half_crimp_kg"],
+        "hangboard_max_weight_open_crimp_kg": inputs["hangboard_max_weight_open_crimp_kg"],
+        "hangboard_min_edge_half_crimp_mm": inputs["hangboard_min_edge_half_crimp_mm"],
+        "hangboard_min_edge_open_crimp_mm": inputs["hangboard_min_edge_open_crimp_mm"],
+        "max_weight_pull_ups_kg": inputs["max_weight_pull_ups_kg"],
+        "actual_bouldering_grade": actual_bouldering_grade,
+        "actual_sport_grade": actual_sport_grade,
+    }
+    logging.info(f"Feedback data: {feedback_data}")
+    logging.info("Sending feedback to database")
+    store_in_db(feedback_data)
+    logging.info("Data inserted successfully")
+
+    st.success("Thank you for your feedback! This will be used to improve the model and future predictions.")
+
+st.subheader("Compare yourself to other climbers")
+st.write(
     "Compare your physical attributes to other climbers with the same bouldering grade. Select the grade you have"
     ' climbed recently and press "Compare" button. Green line indicates your value. If plots are empty, there is no'
     " data available for this grade."
 )
 
-actual_bouldering_grade = col3.selectbox(
-    "Bouldering grade",
-    (
-        "4",
-        "5",
-        "5+",
-        "6A",
-        "6B",
-        "6C",
-        "7A",
-        "7A+",
-        "7B",
-        "7C",
-        "7C+",
-        "8A",
-        "8A+",
-        "8B",
-        "8B+",
-        "8C",
-        "8C+",
-        "9A",
-    ),
-)
-
-if col3.button("Compare"):
+if st.button("Compare"):
     recent_max_climbed_grade = v_to_numeric_mapping[fb_to_v_mapping[actual_bouldering_grade]]
     dist = reddit_data.query(f"recent_max_climbed_grade == {recent_max_climbed_grade}")
 
@@ -192,4 +249,4 @@ if col3.button("Compare"):
         fig.add_shape(type="line", x0=-0.4, x1=0.4, y0=value, y1=value, line=dict(color="Green"), row=row, col=col)
 
     fig.update_layout(height=1400, width=300, showlegend=False)
-    col3.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
