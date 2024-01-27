@@ -47,3 +47,7 @@ docs/_build/
 
 # Secrets   
 .streamlit/secrets.toml
+
+# mlflow
+mlruns/
+/Makefile

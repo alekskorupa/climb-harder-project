@@ -1,0 +1,5 @@
+outs:
+- md5: e0cdcca2d23805b27b81fe978219e00f
+  size: 52
+  hash: md5
+  path: Makefile

@@ -1,16 +1,16 @@
 stages:
   clean_data:
-    cmd: python src/bin/data/clean_data.py
+    cmd: python src/scripts/data/clean_data.py
     deps:
-      - src/bin/data/clean_data.py
+      - src/scripts/data/clean_data.py
       - data/raw/reddit_data.csv
     outs:
       - data/interim/reddit_data.csv
 
   make_datasets:
-    cmd: python src/bin/data/make_datasets.py
+    cmd: python src/scripts/data/make_datasets.py
     deps:
-      - src/bin/data/make_datasets.py
+      - src/scripts/data/make_datasets.py
       - data/interim/reddit_data.csv
     outs:
       - data/processed/reddit_performance/X_train.csv
@@ -21,9 +21,9 @@ stages:
       - data/processed/y_test.csv
 
   train_performance_model:
-    cmd: python src/bin/models/train_performance_model.py
+    cmd: python src/scripts/models/train_performance_model.py
     deps:
-      - src/bin/models/train_performance_model.py
+      - src/scripts/models/train_performance_model.py
       - data/processed/reddit_performance/X_train.csv
       - data/processed/reddit_performance/X_test.csv
       - data/processed/y_train.csv
