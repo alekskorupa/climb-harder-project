@@ -89,10 +89,10 @@ stages:
       size: 16529
     - path: src/bin/models/train_performance_model.py
       hash: md5
-      md5: 8e752768f19cfcc0c5c949e12d5262be
-      size: 3938
+      md5: 77c0a640d82761b414b0e56960f2e975
+      size: 4492
     outs:
     - path: data/models/performance_model/model.pkl
       hash: md5
-      md5: 161b1c5e24bb2d2ab47f41630d45463e
-      size: 73830
+      md5: 303cfe4af63b221f4d01e38341f27b7f
+      size: 73729
