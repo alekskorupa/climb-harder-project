@@ -16,7 +16,7 @@ The data used for this project was downloaded from a [Reddit thread](https://www
 
 ## Demo
 
-TBC
+![Demo Image](images/interface_demo.png)
 
 ## Tech Stack
 
