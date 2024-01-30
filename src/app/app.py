@@ -1,6 +1,4 @@
 import streamlit as st
-import joblib
-from pathlib import Path
 from src.utils.climbing_grades_mapping import (
     v_to_fb_mapping,
     numeric_to_v_mapping,
@@ -14,7 +12,10 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import psycopg2
 from psycopg2 import OperationalError
-import logging
+import logging as logger
+import requests
+
+logger.basicConfig(level=logger.INFO)
 
 
 # Database connection
@@ -29,15 +30,15 @@ def connect_to_postgres():
             database=secrets["database"],
         )
         cursor = connection.cursor()
-        logging.info(connection.get_dsn_parameters(), "\n")
+        logger.info(connection.get_dsn_parameters(), "\n")
         cursor.execute("SELECT version();")
         record = cursor.fetchone()
-        logging.info("You are connected to - ", record, "\n")
+        logger.info("You are connected to - ", record, "\n")
 
         return connection
 
     except (Exception, OperationalError) as error:
-        logging.info("Error while connecting to PostgreSQL", error)
+        logger.info("Error while connecting to PostgreSQL", error)
 
 
 def store_in_db(data: dict):
@@ -59,16 +60,11 @@ def store_in_db(data: dict):
 
 
 # Constants
-DATA_PATH = Path(__file__).parents[0] / "data"
-MODEL_PATH = DATA_PATH / "models/performance_model"
-REDDIT_DATA_PATH = DATA_PATH / "interim/reddit_data.csv"
-
-# Load data and model
-model = joblib.load(MODEL_PATH / "model.pkl")
-reddit_data = pd.read_csv(REDDIT_DATA_PATH)
-
-# Connect to database
-conn = connect_to_postgres()
+# DATA_PATH = Path(__file__).parents[0] / "data"
+# REDDIT_DATA_PATH = DATA_PATH / "interim/reddit_data.csv"
+#
+## Load data
+# reddit_data = pd.read_csv(REDDIT_DATA_PATH)
 
 value_presets = {
     "age": {"display_name": "Age", "min": 10, "max": 100, "default": 30},
@@ -156,18 +152,30 @@ st.write(
 
 # When 'Predict' is clicked, make a prediction and display it
 if st.button("Estimate"):
-    logging.info("Estimating climbing grades")
+    logger.info("Estimating climbing grades")
     data = pd.Series(data=inputs).drop(["gender", "ape_diff", "age"]).to_frame().transpose()
 
-    prediction = int(model.predict(data))
-    prediction_v = numeric_to_v_mapping[prediction]
-    prediction_fb = v_to_fb_mapping[prediction_v]
-    prediction_french_sport = v_grade_to_french_sport_mapping[prediction_v]
-    st.write("Your estimated climbing grades are: ")
-    st.write(f"Bouldering: {prediction_v} / ({prediction_fb})")
-    st.write(f"Sport: {prediction_french_sport}")
+    # Send a POST request to the FastAPI application
+    data = data.to_dict(orient="records")
+    logger.info(f"Sending data to API: {data}")
+    response = requests.post("http://localhost:8000/predict", json=data)
 
-    logging.info(f"Climbing grades estimated: {prediction_v} / ({prediction_fb} / {prediction_french_sport} (sport) ")
+    if response.status_code == 200:
+        # Get the prediction from the response
+        prediction = int(response.json()["prediction"])
+
+        prediction_v = numeric_to_v_mapping[prediction]
+        prediction_fb = v_to_fb_mapping[prediction_v]
+        prediction_french_sport = v_grade_to_french_sport_mapping[prediction_v]
+        st.write("Your estimated climbing grades are: ")
+        st.write(f"Bouldering: {prediction_v} / ({prediction_fb})")
+        st.write(f"Sport: {prediction_french_sport}")
+        logger.info(
+            f"Climbing grades estimated: {prediction_v} / ({prediction_fb} / {prediction_french_sport} (sport) "
+        )
+    else:
+        st.write(f"Request failed with status code {response.status_code}")
+
 
 actual_bouldering_grade = st.selectbox(
     "Actual bouldering grade",
@@ -177,6 +185,9 @@ actual_sport_grade = st.selectbox("Actual sport grade", (grade for grade in fren
 
 # Send feedback to PostgreSQL database
 if st.button("Submit Feedback"):
+    # Connect to database
+    conn = connect_to_postgres()
+
     timestamp = pd.Timestamp.now()
     feedback_data = {
         "timestamp": str(timestamp),
@@ -194,10 +205,10 @@ if st.button("Submit Feedback"):
         "actual_bouldering_grade": actual_bouldering_grade,
         "actual_sport_grade": actual_sport_grade,
     }
-    logging.info(f"Feedback data: {feedback_data}")
-    logging.info("Sending feedback to database")
+    logger.info(f"Feedback data: {feedback_data}")
+    logger.info("Sending feedback to database")
     store_in_db(feedback_data)
-    logging.info("Data inserted successfully")
+    logger.info("Data inserted successfully")
 
     st.success("Thank you for your feedback! This will be used to improve the model and future predictions.")
 
