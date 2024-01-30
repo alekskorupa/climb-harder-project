@@ -1,4 +1,4 @@
-# Climb-harder Project :climbing:
+# Climb-harder project :climbing:
 
 Streamlit web app designed to assist climbers in understanding their weaknesses and enhancing their performance. The application predicts climbing grades based on users' physical attributes and training habits, leveraging data obtained from a [reddit thread](https://www.reddit.com/r/climbharder/comments/gi7v2k/rquest_climbing_specific_datasets/). This project was developed for personal entertainment and skill enhancement and there are no serious plans to develop it further.
 
